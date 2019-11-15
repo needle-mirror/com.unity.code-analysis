@@ -31,9 +31,9 @@
         </member>
         <member name="M:Microsoft.CodeAnalysis.CSharp.CodeStyle.TypeStyle.TypeStyleHelper.IsImplicitTypePreferred(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax,Microsoft.CodeAnalysis.SemanticModel,Microsoft.CodeAnalysis.Options.OptionSet,System.Threading.CancellationToken)">
             <summary>
-            Given an expression of assignment, answers whether the declaration
-            can use var keyword, by looking at the user's style preferences 
-            obtained from options and the context obtained from the expression.
+            Given an expression or assignment, answers whether the declaration can use var keyword,
+            by looking at the user's style preferences obtained from options and the context
+            obtained from the expression.
             </summary>
         </member>
         <member name="M:Microsoft.CodeAnalysis.CSharp.CodeStyle.TypeStyle.TypeStyleHelper.IsBuiltInType(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax,Microsoft.CodeAnalysis.SemanticModel,System.Threading.CancellationToken)">
@@ -140,6 +140,31 @@
             the specified argument is greater than the number of parameters.
             </summary>
         </member>
+        <member name="M:Microsoft.CodeAnalysis.CSharp.Extensions.AttributeArgumentSyntaxExtensions.DetermineParameter(Microsoft.CodeAnalysis.CSharp.Syntax.AttributeArgumentSyntax,Microsoft.CodeAnalysis.SemanticModel,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Returns the parameter to which this argument is passed. If <paramref name="allowParams"/>
+            is true, the last parameter will be returned if it is params parameter and the index of
+            the specified argument is greater than the number of parameters.
+            </summary>
+            <remarks>
+            Returns null if the <paramref name="argument"/> is a named argument.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.CodeAnalysis.CSharp.Extensions.BasePropertyDeclarationSyntaxExtensions.TryGetSemicolonToken(Microsoft.CodeAnalysis.CSharp.Syntax.BasePropertyDeclarationSyntax)">
+            <summary>
+            Available if <paramref name="node"/> is <see cref="T:Microsoft.CodeAnalysis.CSharp.Syntax.PropertyDeclarationSyntax"/> or <see cref="T:Microsoft.CodeAnalysis.CSharp.Syntax.IndexerDeclarationSyntax"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.CodeAnalysis.CSharp.Extensions.BasePropertyDeclarationSyntaxExtensions.TryWithSemicolonToken(Microsoft.CodeAnalysis.CSharp.Syntax.BasePropertyDeclarationSyntax,Microsoft.CodeAnalysis.SyntaxToken)">
+            <summary>
+            Available if <paramref name="node"/> is <see cref="T:Microsoft.CodeAnalysis.CSharp.Syntax.PropertyDeclarationSyntax"/> or <see cref="T:Microsoft.CodeAnalysis.CSharp.Syntax.IndexerDeclarationSyntax"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.CodeAnalysis.CSharp.Extensions.BasePropertyDeclarationSyntaxExtensions.TryWithExpressionBody(Microsoft.CodeAnalysis.CSharp.Syntax.BasePropertyDeclarationSyntax,Microsoft.CodeAnalysis.CSharp.Syntax.ArrowExpressionClauseSyntax)">
+            <summary>
+            Available if <paramref name="node"/> is <see cref="T:Microsoft.CodeAnalysis.CSharp.Syntax.PropertyDeclarationSyntax"/> or <see cref="T:Microsoft.CodeAnalysis.CSharp.Syntax.IndexerDeclarationSyntax"/>.
+            </summary>
+        </member>
         <member name="M:Microsoft.CodeAnalysis.CSharp.Extensions.ContextQuery.SyntaxTreeExtensions.IsPossibleTupleContext(Microsoft.CodeAnalysis.SyntaxTree,Microsoft.CodeAnalysis.SyntaxToken,System.Int32)">
             <summary>
             Are you possibly typing a tuple type or expression?
@@ -162,6 +187,15 @@
             <summary>
             Adds to <paramref name="targetType"/> if it does not contain an anonymous
             type and binds to the same type at the given <paramref name="position"/>.
+            </summary>
+        </member>
+        <member name="M:Microsoft.CodeAnalysis.CSharp.Extensions.ExpressionSyntaxExtensions.IsExpressionOfArgumentInDeconstruction(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax)">
+            <summary>
+            If this declaration or identifier is part of a deconstruction, find the deconstruction.
+            If found, returns either an assignment expression or a foreach variable statement.
+            Returns null otherwise.
+            
+            copied from SyntaxExtensions.GetContainingDeconstruction
             </summary>
         </member>
         <member name="M:Microsoft.CodeAnalysis.CSharp.Extensions.ExpressionSyntaxExtensions.IsReplacementCandidate(Microsoft.CodeAnalysis.SymbolInfo,System.Collections.Immutable.ImmutableArray{Microsoft.CodeAnalysis.ISymbol},System.Collections.Immutable.ImmutableArray{Microsoft.CodeAnalysis.ISymbol})">
@@ -401,7 +435,7 @@
         </member>
         <member name="M:Microsoft.CodeAnalysis.CSharp.Formatting.FormattingHelpers.IsOpenParenInVarDeconstructionDeclaration(Microsoft.CodeAnalysis.SyntaxToken)">
             <summary>
-            Checks whether currentToken is the opening paren of a deconstruction-declaration in var form, such as `var (x, y) = ...`
+            Checks whether currentToken is the opening paren of a deconstruction-declaration in var form, such as <c>var (x, y) = ...</c>
             </summary>
         </member>
         <member name="T:Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTreeFactoryServiceFactory.CSharpSyntaxTreeFactoryService.PathSyntaxReference">
@@ -463,6 +497,60 @@
             class considers which ones of those can be simplified (after the refactoring was done).
             If the inferred name of the member matches, the explicit name (from Complexify) can be removed.
             </summary>
+        </member>
+        <member name="F:Microsoft.CodeAnalysis.CSharp.Utilities.TypeStyleResult.IsStylePreferred">
+            <summary>
+            Whether or not converting would transition the code to the style the user prefers. i.e. if the user likes
+            <c>var</c> for everything, and you have <c>int i = 0</c> then <see cref="F:Microsoft.CodeAnalysis.CSharp.Utilities.TypeStyleResult.IsStylePreferred"/> will be
+            <see langword="true"/>. However, if the user likes <c>var</c> for everything and you have <c>var i = 0</c>,
+            then it's still possible to convert that, it would just be <see langword="false"/> for
+            <see cref="F:Microsoft.CodeAnalysis.CSharp.Utilities.TypeStyleResult.IsStylePreferred"/> because it goes against the user's preferences.
+            </summary>
+            <remarks>
+            <para>In general, most features should only convert the type if <see cref="F:Microsoft.CodeAnalysis.CSharp.Utilities.TypeStyleResult.IsStylePreferred"/> is
+            <see langword="true"/>. The one exception is the refactoring, which is explicitly there to still let people
+            convert things quickly, even if it's going against their stated style.</para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.CodeAnalysis.CSharp.Utilities.CSharpTypeStyleHelper.State.IsTypeApparentInDeclaration(Microsoft.CodeAnalysis.CSharp.Syntax.VariableDeclarationSyntax,Microsoft.CodeAnalysis.SemanticModel,Microsoft.CodeAnalysis.CSharp.CodeStyle.TypeStyle.TypeStylePreference,System.Threading.CancellationToken)">
+            <summary>
+            Returns true if type information could be gleaned by simply looking at the given statement.
+            This typically means that the type name occurs in right hand side of an assignment.
+            </summary>
+        </member>
+        <member name="M:Microsoft.CodeAnalysis.CSharp.Utilities.CSharpTypeStyleHelper.State.IsPredefinedTypeInDeclaration(Microsoft.CodeAnalysis.SyntaxNode,Microsoft.CodeAnalysis.SemanticModel)">
+            <summary>
+            checks if the type represented by the given symbol is one of the
+            simple types defined in the compiler.
+            </summary>
+            <remarks>
+            From the IDE perspective, we also include object and string to be simplified
+            to var. <see cref="M:Microsoft.CodeAnalysis.CSharp.SyntaxFacts.IsPredefinedType(Microsoft.CodeAnalysis.CSharp.SyntaxKind)"/> considers string
+            and object but the compiler's implementation of IsIntrinsicType does not.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.CodeAnalysis.CSharp.Utilities.CSharpTypeStyleHelper.State.IsMadeOfSpecialTypes(Microsoft.CodeAnalysis.ITypeSymbol)">
+            <summary>
+            Returns true for type that are arrays/nullable/pointer types of special types
+            </summary>
+        </member>
+        <member name="M:Microsoft.CodeAnalysis.CSharp.Utilities.CSharpUseExplicitTypeHelper.AssignmentSupportsStylePreference(Microsoft.CodeAnalysis.SyntaxToken,Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax,Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax,Microsoft.CodeAnalysis.SemanticModel,Microsoft.CodeAnalysis.Options.OptionSet,System.Threading.CancellationToken)">
+            <summary>
+            Analyzes the assignment expression and rejects a given declaration if it is unsuitable for explicit typing.
+            </summary>
+            <returns>
+            false, if explicit typing cannot be used.
+            true, otherwise.
+            </returns>
+        </member>
+        <member name="M:Microsoft.CodeAnalysis.CSharp.Utilities.CSharpUseImplicitTypeHelper.AssignmentSupportsStylePreference(Microsoft.CodeAnalysis.SyntaxToken,Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax,Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax,Microsoft.CodeAnalysis.SemanticModel,Microsoft.CodeAnalysis.Options.OptionSet,System.Threading.CancellationToken)">
+            <summary>
+            Analyzes the assignment expression and rejects a given declaration if it is unsuitable for implicit typing.
+            </summary>
+            <returns>
+            false, if implicit typing cannot be used.
+            true, otherwise.
+            </returns>
         </member>
         <member name="T:Microsoft.CodeAnalysis.CSharp.Utilities.FormattingRangeHelper">
             <summary>
